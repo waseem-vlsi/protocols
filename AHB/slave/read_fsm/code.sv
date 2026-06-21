@@ -10,10 +10,21 @@ module slave_read_fsm(
 
 );
 
-    localparam[1:0] 
+    typedef enum logic[1:0]{
+            IDLE,
+            ADDR_DECODE,
+            FETCH_DATA,
+            TRANSFER_DATA
+    }state_t ;
+
+    state_t present_state, next_state;
 
 
-    always@(posedge clock or posedge reset) begin 
+    localparam NON_SEQ = 2'b10;
+
+    logic [31:0] addr_reg, data_reg;
+    logic [31:0] mem [1023:0];
+    always_ff@(posedge clock or posedge reset) begin 
 
         if(reset) 
             present_state <= IDLE;
@@ -21,16 +32,16 @@ module slave_read_fsm(
             present_state <= next_state;
     end 
 
-always_ff @(posedge clock or posedge reset) begin 
+always_ff@(posedge clock or posedge reset) begin 
     if(reset)
         addr_reg <= 32'd0;
     else if(present_state == IDLE &&
-            HTRANS == NONSEQ &&
+            HTRANS == NON_SEQ &&
             HWRITE == 0)
         addr_reg <= HADDR;
 end
     
-always_ff @(posedge clock or posedge reset) begin 
+always_ff@(posedge clock or posedge reset) begin 
     if(reset) 
         data_reg <= 32'd0;
 
@@ -40,7 +51,7 @@ end
 
 
 
-    always@(*) begin 
+    always_comb begin 
         next_state = present_state;
         case(present_state)
         IDLE: begin 
@@ -69,15 +80,16 @@ end
         end 
 
 
-    always@(*) begin 
+    always_comb begin 
         HREADY = 0;
-        HRDATA = 0;
+        HRDATA = 32'd0;
 
         case(present_state)
             IDLE: begin 
+                HREADY = 1;
             end 
 
-            ADDRESS_DECODE: begin 
+            ADDR_DECODE: begin 
             end
 
             FETCH_DATA: begin 
@@ -91,3 +103,4 @@ end
 
         endcase
     end
+endmodule
