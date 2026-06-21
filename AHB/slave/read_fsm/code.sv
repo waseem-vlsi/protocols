@@ -10,6 +10,7 @@ module slave_read_fsm(
 
 );
 
+    localparam[1:0] 
 
 
     always@(posedge clock or posedge reset) begin 
@@ -40,15 +41,32 @@ end
 
 
     always@(*) begin 
-        present_state = next_state;
+        next_state = present_state;
         case(present_state)
-        IDLE: 
+        IDLE: begin 
+            if(HTRANS == NON_SEQ  &&  HWRITE == 0)
+                next_state = ADDR_DECODE;
+            else 
+                next_state = IDLE;            
+        end 
 
+        ADDR_DECODE: begin 
+            next_state = FETCH_DATA;
+        end
 
+        FETCH_DATA: begin
+            next_state = TRANSFER_DATA;  
+        end
+
+        TRANSFER_DATA: begin
+            next_state = IDLE;
+        end
+
+        default: begin 
+            next_state = IDLE;
+        end
         endcase 
-    
-
-    end 
+        end 
 
 
     always@(*) begin 
@@ -67,6 +85,8 @@ end
             TRANSFER_DATA: begin 
                 HREADY = 1;
                 HRDATA = data_reg;
+            end
+            default: begin
             end
 
         endcase
