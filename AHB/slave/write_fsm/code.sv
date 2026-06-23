@@ -53,8 +53,68 @@ module write_fsm(
     end
   end 
 
+// next state logic 
 
 
+  always_comb begin 
+     nxt_state = present_state;
+    unique case(present_state) 
+    
+      IDLE: begin 
+        if(HWRITE == 1 &&
+           HTRANS == NONSEQ) begin
+          nxt_state = ADDR_DECODE;
+        end
+        else begin 
+          nxt_state = IDLE;
+      end 
+      end
+
+
+      ADDR_DECODE: begin 
+          nxt_state = WRITE_DATA;
+      end 
+
+      WRITE_DATA: begin 
+          nxt_state = DONE;
+      end
+
+      DONE: begin 
+          nxt_state = IDLE;
+      end
+
+      default: begin 
+         nxt_state = IDLE;
+      end 
+       endcase
+  end 
+
+
+  always_comb begin 
+      HREADY = 0;
+    unique case(present_state) 
+
+      IDLE: begin 
+        HREADY = 1;
+      end
+
+      ADDR_DECODE: begin 
+          HREADY = 0;
+      end 
+
+      WRITE_DATA: begin 
+          HREADY = 0;
+      end
+
+      DONE: begin 
+         HREADY = 1;
+      end
+
+      default: begin 
+         HREADY = 0;
+      end 
+       endcase
+      end 
 
 
 endmodule
