@@ -1,6 +1,8 @@
 module write_fsm(
+  // global signals
   input logic clock,
   input logic reset,
+  // i/o signals
   input logic [1:0]HTRANS,
   input logic HWRITE,
   input logic [31:0]HADDR,
