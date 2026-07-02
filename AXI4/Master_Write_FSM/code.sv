@@ -1,20 +1,13 @@
 module Master_Write_FSM(
   input logic clock,
   input logic reset,
-  input logic [31:0] cpu_data,
+  input logic write_req,
   input logic [31:0] cpu_addr,
-  input logic [3:0] cpu_awlen,
-  input logic [2:0] cpu_awsize,
-  input logic [1:0] cpu_awburst,
-
-  output logic [31:0] AWADDR,
-  output logic [31:0] WDATA,
-  output logic [3:0] AWLEN,
-  output logic [2:0] AWSIZE,
-  output logic [1:0] AWBURST,
-
-  input logic BREADY
-  
+  input logic [31:0] cpu_data,
+  input logic [7:0] cpu_awlen,
+  input logic [2:0]cpu_awsize,
+  input logic [1:0]cpu_awburst,
+  input logic 
 );
   
 
@@ -32,7 +25,7 @@ state_t present_state,next_state;
 
 logic [31:0] addr_reg;
 logic [31:0] write_reg_data;
-logic [3:0]awlen_reg;
+logic [7:0]awlen_reg;
 logic [2:0]awsize_reg;
 logic [1:0]awburst_reg;
 logic [3:0]beat_counter;
@@ -70,7 +63,7 @@ end
 
 always_ff@(posedge clock or posedge reset) begin 
   if(reset) begin 
-    awlen_reg <= 4'd0;
+    awlen_reg <= 8'd0;
   end 
   else if(write_req) begin 
     awlen_reg <= cpu_awlen;
