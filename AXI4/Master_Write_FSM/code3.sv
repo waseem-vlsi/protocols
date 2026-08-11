@@ -104,6 +104,182 @@ module AXI_master_write_fsm(
   else if(WVALID && WREADY)
     beat_count_reg <= beat_count_reg + 8'd1;
   end 
-  
+
+
+  // Next state logic 
+
+  always_comb begin
+    next_state = present_state;
+    case(present_state)
+
+      IDLE: begin 
+        if(write_req) begin 
+        next_state = ADDRESS;
+        end 
+        else begin 
+        next_state = IDLE; 
+        end 
+      end 
+
+      ADDRESS: begin 
+        if(AWVALID && AWREADY) begin 
+        next_state = DATA;
+        end 
+        else begin 
+        next_state = ADDRESS;
+        end 
+      end 
+
+      DATA: begin 
+        if(WVALID && WREADY && WLAST) begin 
+        next_state = DONE;
+        end 
+        else begin 
+        next_state = DATA;
+        end 
+      end 
+
+      DONE: begin 
+        if(BVALID && BREADY) begin 
+        next_state = IDLE;
+        end 
+        else begin 
+        next_state =   DONE;
+        end 
+      end 
+
+      default: begin 
+      next_state = IDLE;
+      end 
+    endcase 
+end
+
+
+
+// OUTPUT LOGIC
+
+always_comb begin
+
+    // Default values
+    AWADDR  = 32'd0;
+    AWVALID = 1'b0;
+    AWLEN   = 8'd0;
+    AWSIZE  = 3'd0;
+    AWBURST = 2'd0;
+
+    WDATA   = 32'd0;
+    WVALID  = 1'b0;
+    WSTRB   = 4'b0000;
+    WLAST   = 1'b0;
+
+    BREADY  = 1'b0;
+
+    case (present_state)
+
+        //==================================================
+        // IDLE STATE
+        //==================================================
+        IDLE: begin
+
+            AWVALID = 1'b0;
+            WVALID  = 1'b0;
+            WLAST   = 1'b0;
+            BREADY  = 1'b0;
+
+        end
+
+
+        //==================================================
+        // ADDRESS STATE
+        //==================================================
+        ADDRESS: begin
+
+            AWADDR  = addr_reg;
+            AWVALID = 1'b1;
+
+            AWLEN   = awlen_reg;
+            AWSIZE  = awsize_reg;
+            AWBURST = awburst_reg;
+
+        end
+
+
+        //==================================================
+        // DATA STATE
+        //==================================================
+        DATA: begin
+
+            WDATA  = data_reg;
+            WVALID = 1'b1;
+
+            // WLAST for last beat
+            if (beat_count_reg == awlen_reg)
+                WLAST = 1'b1;
+            else
+                WLAST = 1'b0;
+
+
+           // WSTRB generation
+    case (awsize_reg)
+
+    // 1 byte per beat
+    3'b000: begin
+        WSTRB = 4'b0001 <<
+                ((addr_reg + beat_count_reg) & 32'h00000003);
+    end
+
+    // 2 bytes per beat
+    3'b001: begin
+        WSTRB = 4'b0011 <<
+                ((addr_reg + (beat_count_reg << 1)) & 32'h00000003);
+    end
+
+    // 4 bytes per beat
+    3'b010: begin
+        WSTRB = 4'b1111;
+    end
+
+    default: begin
+        WSTRB = 4'b0000;
+    end
+
+endcase
+
+        end
+
+
+        //==================================================
+        // DONE STATE
+        //==================================================
+        DONE: begin
+
+            BREADY = 1'b1;
+
+        end
+
+
+        //==================================================
+        // DEFAULT
+        //==================================================
+        default: begin
+
+            AWADDR  = 32'd0;
+            AWVALID = 1'b0;
+            AWLEN   = 8'd0;
+            AWSIZE  = 3'd0;
+            AWBURST = 2'd0;
+
+            WDATA   = 32'd0;
+            WVALID  = 1'b0;
+            WSTRB   = 4'b0000;
+            WLAST   = 1'b0;
+
+            BREADY  = 1'b0;
+
+        end
+
+    endcase
+
+end
 
 endmodule
